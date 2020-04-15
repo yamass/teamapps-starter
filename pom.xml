@@ -15,6 +15,13 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
         <teamapps.version>0.9.56</teamapps.version>
+        <jooq.version>3.13.1</jooq.version>
+        <flyway.version>6.0.4</flyway.version>
+        <postgresql.version>42.2.5</postgresql.version>
+
+        <db.url>jdbc:postgresql://localhost:54329/postgres</db.url>
+        <db.username>postgres</db.username>
+        <db.password>postgres</db.password>
     </properties>
 
 
@@ -24,7 +31,94 @@
             <artifactId>teamapps-server-jetty-embedded</artifactId>
             <version>${teamapps.version}</version>
         </dependency>
+        
+        <dependency>
+            <groupId>org.postgresql</groupId>
+            <artifactId>postgresql</artifactId>
+            <version>${postgresql.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.zaxxer</groupId>
+            <artifactId>HikariCP</artifactId>
+            <version>3.3.1</version>
+        </dependency>
+        <dependency>
+            <groupId>org.jooq</groupId>
+            <artifactId>jooq</artifactId>
+            <version>${jooq.version}</version>
+        </dependency>
     </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.flywaydb</groupId>
+                <artifactId>flyway-maven-plugin</artifactId>
+                <version>${flyway.version}</version>
+                <executions>
+                    <execution>
+                        <id>migrate-schema</id>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>migrate</goal>
+                        </goals>
+                        <configuration>
+                            <url>${db.url}</url>
+                            <user>${db.username}</user>
+                            <password>${db.password}</password>
+                            <schemas>
+                                <schema>postgres</schema>
+                            </schemas>
+                            <locations>
+                                <location>filesystem:src/main/resources/db/migration</location>
+                            </locations>
+                            <outOfOrder>true</outOfOrder>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.jooq</groupId>
+                <artifactId>jooq-codegen-maven</artifactId>
+                <version>${jooq.version}</version>
+                <executions>
+                    <execution>
+                        <id>jooq-codegen</id>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>generate</goal>
+                        </goals>
+                        <configuration>
+                            <jdbc>
+                                <driver>org.postgresql.Driver</driver>
+                                <url>${db.url}</url>
+                                <user>${db.username}</user>
+                                <password>${db.password}</password>
+                            </jdbc>
+                            <generator>
+                                <database>
+                                    <name>org.jooq.meta.postgres.PostgresDatabase</name>
+                                    <inputSchema>postgres</inputSchema>
+                                    <includes>.*</includes>
+                                    <excludes>flyway_schema_history</excludes>
+                                </database>
+                                <target>
+                                    <packageName>org.teamapps.db.jooq</packageName>
+                                    <directory>${project.build.directory}/generated-sources/jooq</directory>
+                                </target>
+                                <generate>
+                                    <javaTimeTypes>true</javaTimeTypes>
+                                    <relations>true</relations>
+                                    <pojos>true</pojos>
+                                    <relations>true</relations>
+                                </generate>
+                            </generator>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
     
 
 </project>
